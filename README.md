@@ -1,6 +1,6 @@
-# Webpage attention
+# WebGaze
 
-Predicts where people look on a static desktop webpage screenshot.
+Multimodal deep learning for predicting where people look on a static desktop webpage.
 
 ResNet reads the image, a small transformer reads layout/DOM regions, fusion draws the saliency map. SALICON pretrains the visual encoder, UEyes fine-tunes on webpages, FiWi is the held-out test.
 
