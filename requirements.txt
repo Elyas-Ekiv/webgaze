@@ -1,0 +1,16 @@
+numpy>=1.26
+pandas>=2.2
+opencv-python-headless>=4.10
+pillow>=10.4
+scipy>=1.13
+matplotlib>=3.9
+seaborn>=0.13
+scikit-learn>=1.5
+tqdm>=4.66
+fastapi>=0.115
+uvicorn>=0.32
+python-multipart>=0.0.12
+playwright>=1.48
+beautifulsoup4>=4.12
+python-docx>=1.1
+gdown>=5.2
