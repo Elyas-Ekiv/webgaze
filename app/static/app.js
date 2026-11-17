@@ -44,6 +44,7 @@
     canvasOriginal: document.getElementById("canvas-original"),
     canvasHeatmap: document.getElementById("canvas-heatmap"),
     canvasOverlay: document.getElementById("canvas-overlay"),
+    heatmapCaption: document.getElementById("heatmap-caption"),
     stepInput: document.getElementById("step-input"),
     stepRun: document.getElementById("step-run"),
     stepOutput: document.getElementById("step-output"),
@@ -267,10 +268,25 @@
 
     els.modelBadge.textContent = `Model · ${payload.model || "—"}`;
     const weightsNote = document.getElementById("weights-note");
+    const layoutDemo = payload.display === "layout_demo";
+    if (els.heatmapCaption) {
+      els.heatmapCaption.textContent = layoutDemo
+        ? "Layout demo map · where people typically look: headers, text, buttons — not the trained model"
+        : payload.display === "contrast_stretched"
+          ? "Heatmap · contrast stretched for display"
+          : "Heatmap";
+    }
     if (payload.checkpoint_note) {
       weightsNote.hidden = false;
+      const mapNote = layoutDemo
+        ? "This overlay is a layout demo map (where people typically look: headers, text, buttons), not the trained model. "
+        : "Colors are contrast-stretched for display. ";
       weightsNote.textContent =
-        `Colors are contrast-stretched for display. Live weights: ${payload.checkpoint_note}. Footer FiWi scores are the historical results.`;
+        `${mapNote}Live weights: ${payload.checkpoint_note}. Footer FiWi scores are the historical results.`;
+    } else if (layoutDemo) {
+      weightsNote.hidden = false;
+      weightsNote.textContent =
+        "This overlay is a layout demo map (where people typically look: headers, text, buttons), not the trained model. Footer FiWi scores are the historical results.";
     } else {
       weightsNote.hidden = true;
       weightsNote.textContent = "";
