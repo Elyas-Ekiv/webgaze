@@ -148,7 +148,7 @@ def main() -> None:
     )
     plot_metrics(table, FIGURES / "fiwi_metrics.png")
     plot_history(FIGURES / "training_curves.png")
-    model, device, _ = load_checkpoint(MODELS_DIR / "best_multimodal_model.pth", device)
+    model, device, *_ = load_checkpoint(MODELS_DIR / "best_multimodal_model.pth", device)
     plot_qualitative(model, device, fiwi, FIGURES / "fiwi_qualitative.png")
     example_dir = ROOT / "app" / "static" / "examples"
     example_dir.mkdir(parents=True, exist_ok=True)

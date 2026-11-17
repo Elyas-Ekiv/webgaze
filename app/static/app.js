@@ -266,6 +266,15 @@
     drawOverlay();
 
     els.modelBadge.textContent = `Model · ${payload.model || "—"}`;
+    const weightsNote = document.getElementById("weights-note");
+    if (payload.checkpoint_note) {
+      weightsNote.hidden = false;
+      weightsNote.textContent =
+        `Colors are contrast-stretched for display. Live weights: ${payload.checkpoint_note}. Footer FiWi scores are the historical results.`;
+    } else {
+      weightsNote.hidden = true;
+      weightsNote.textContent = "";
+    }
     const sourceMap = {
       upload: "Screenshot",
       sample: "Sample page",
@@ -407,9 +416,13 @@
       const cc = m.CC != null ? Number(m.CC).toFixed(4) : "—";
       const auc = m["AUC-Judd"] != null ? Number(m["AUC-Judd"]).toFixed(4) : "—";
       const n = info.fiwi_images != null ? info.fiwi_images : "—";
-      const ck = info.checkpoint ? "checkpoint ready" : "checkpoint missing";
+      const ck = info.checkpoint_note
+        ? info.checkpoint_note
+        : info.checkpoint
+          ? "checkpoint ready"
+          : "checkpoint missing";
       els.footerMetrics.innerHTML =
-        `<strong>WebGaze</strong> · best model <strong>${model}</strong> · FiWi CC ${cc}, AUC-Judd ${auc} (${n} images) · ${ck}`;
+        `<strong>WebGaze</strong> · reported best model <strong>${model}</strong> · FiWi CC ${cc}, AUC-Judd ${auc} (${n} images) · ${ck}`;
       if (!info.sample_ready) {
         els.sampleBtn.disabled = true;
         els.sampleBtn.title = "Sample image not found";

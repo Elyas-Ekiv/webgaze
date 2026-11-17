@@ -20,7 +20,8 @@ def load_checkpoint(path: Path | None = None, device: torch.device | None = None
     model = build_model(ckpt["model_name"])
     model.load_state_dict(ckpt["state_dict"])
     model.to(device).eval()
-    return model, device, ckpt["model_name"]
+    note = ckpt.get("note") if isinstance(ckpt, dict) else None
+    return model, device, ckpt["model_name"], (str(note) if note else None)
 
 
 @torch.no_grad()
@@ -37,5 +38,21 @@ def predict_bgr(model, image_bgr: np.ndarray, device: torch.device, boxes: list[
     return np.clip(pred[0, 0].float().cpu().numpy(), 0.0, 1.0), regions
 
 
+def display_heatmap(heatmap: np.ndarray) -> np.ndarray:
+    """Percentile-stretch a saliency map for visualization only.
+
+    Metrics keep the raw prediction. An initialized decoder can sit near 0.5
+    with almost no range; stretching the 2nd–98th percentiles makes the spatial
+    variation visible without changing stored scores or checkpoint weights.
+    """
+    h = np.asarray(heatmap, dtype=np.float32)
+    lo = float(np.percentile(h, 2))
+    hi = float(np.percentile(h, 98))
+    if hi - lo < 1e-6:
+        return np.zeros_like(h, dtype=np.float32)
+    return np.clip((h - lo) / (hi - lo), 0.0, 1.0)
+
+
 def heatmap_to_color(heatmap: np.ndarray) -> np.ndarray:
-    return cv2.applyColorMap(np.clip(heatmap * 255, 0, 255).astype(np.uint8), cv2.COLORMAP_JET)
+    vis = display_heatmap(heatmap)
+    return cv2.applyColorMap(np.clip(vis * 255.0, 0, 255).astype(np.uint8), cv2.COLORMAP_JET)
