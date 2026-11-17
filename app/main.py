@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 
 from src.config import IMG_H, IMG_W, RESULTS  # noqa: E402
 from src.data.html_dom import boxes_to_dom, image_to_dom  # noqa: E402
-from src.infer import heatmap_to_color, load_checkpoint, predict_bgr  # noqa: E402
+from src.infer import colorize_heatmap, heatmap_for_display, load_checkpoint, predict_bgr  # noqa: E402
 
 STATIC = Path(__file__).parent / "static"
 EXAMPLE = STATIC / "examples" / "sample.jpg"
@@ -54,7 +54,11 @@ DOM_SCRIPT = """() => {
 
 def get_model():
     if "model" not in _cache:
-        _cache["model"], _cache["device"], _cache["name"] = load_checkpoint()
+        model, device, name, note = load_checkpoint()
+        _cache["model"] = model
+        _cache["device"] = device
+        _cache["name"] = name
+        _cache["note"] = note
     return _cache["model"], _cache["device"], _cache["name"]
 
 
@@ -159,7 +163,12 @@ def _scale_box(box: dict, sx: float, sy: float) -> dict:
 def _predict(image_bgr: np.ndarray, boxes: list[dict] | None = None, source: str = "upload") -> dict:
     model, device, name = get_model()
     heatmap, regions = predict_bgr(model, image_bgr, device, boxes)
-    color = heatmap_to_color(heatmap)
+    # Initialized demo weights sit near 0.5. Show a layout gaze map instead of
+    # stretching that noise. A trained checkpoint with real range keeps its map.
+    shown, display_mode, attention_regions = heatmap_for_display(
+        heatmap, regions, _cache.get("note"), image_bgr
+    )
+    color = colorize_heatmap(shown)
     frame = cv2.resize(image_bgr, (color.shape[1], color.shape[0]))
     _, _, _, html = boxes_to_dom(frame, boxes) if boxes else image_to_dom(frame)
 
@@ -174,7 +183,7 @@ def _predict(image_bgr: np.ndarray, boxes: list[dict] | None = None, source: str
         }
         for r in regions
     ]
-    hotspots = _hotspots(heatmap, model_regions)
+    hotspots = _hotspots(shown, attention_regions)
 
     # Upscale demo visuals for clearer UI (model still runs at native size).
     display_scale = 2
@@ -187,6 +196,8 @@ def _predict(image_bgr: np.ndarray, boxes: list[dict] | None = None, source: str
 
     return {
         "model": name,
+        "checkpoint_note": _cache.get("note"),
+        "display": display_mode,
         "source": source,
         "screenshot": _b64_png(frame_hi),
         "heatmap": _b64_png(color_hi),
@@ -220,11 +231,13 @@ def info():
         "fiwi_images": None,
         "metrics": None,
         "sample_ready": EXAMPLE.exists(),
+        "checkpoint_note": None,
     }
     if checkpoint.exists():
         try:
-            _, _, name = get_model()
-            payload["model"] = name
+            get_model()
+            payload["model"] = _cache.get("name")
+            payload["checkpoint_note"] = _cache.get("note")
         except Exception:
             payload["model"] = "unavailable"
     if metrics_path.exists():

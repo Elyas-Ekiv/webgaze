@@ -44,6 +44,7 @@
     canvasOriginal: document.getElementById("canvas-original"),
     canvasHeatmap: document.getElementById("canvas-heatmap"),
     canvasOverlay: document.getElementById("canvas-overlay"),
+    heatmapCaption: document.getElementById("heatmap-caption"),
     stepInput: document.getElementById("step-input"),
     stepRun: document.getElementById("step-run"),
     stepOutput: document.getElementById("step-output"),
@@ -266,6 +267,30 @@
     drawOverlay();
 
     els.modelBadge.textContent = `Model · ${payload.model || "—"}`;
+    const weightsNote = document.getElementById("weights-note");
+    const layoutDemo = payload.display === "layout_demo";
+    if (els.heatmapCaption) {
+      els.heatmapCaption.textContent = layoutDemo
+        ? "Layout demo map · where people typically look: headers, text, buttons — not the trained model"
+        : payload.display === "contrast_stretched"
+          ? "Heatmap · contrast stretched for display"
+          : "Heatmap";
+    }
+    if (payload.checkpoint_note) {
+      weightsNote.hidden = false;
+      const mapNote = layoutDemo
+        ? "This overlay is a layout demo map (where people typically look: headers, text, buttons), not the trained model. "
+        : "Colors are contrast-stretched for display. ";
+      weightsNote.textContent =
+        `${mapNote}Live weights: ${payload.checkpoint_note}. Footer FiWi scores are the historical results.`;
+    } else if (layoutDemo) {
+      weightsNote.hidden = false;
+      weightsNote.textContent =
+        "This overlay is a layout demo map (where people typically look: headers, text, buttons), not the trained model. Footer FiWi scores are the historical results.";
+    } else {
+      weightsNote.hidden = true;
+      weightsNote.textContent = "";
+    }
     const sourceMap = {
       upload: "Screenshot",
       sample: "Sample page",
@@ -407,9 +432,13 @@
       const cc = m.CC != null ? Number(m.CC).toFixed(4) : "—";
       const auc = m["AUC-Judd"] != null ? Number(m["AUC-Judd"]).toFixed(4) : "—";
       const n = info.fiwi_images != null ? info.fiwi_images : "—";
-      const ck = info.checkpoint ? "checkpoint ready" : "checkpoint missing";
+      const ck = info.checkpoint_note
+        ? info.checkpoint_note
+        : info.checkpoint
+          ? "checkpoint ready"
+          : "checkpoint missing";
       els.footerMetrics.innerHTML =
-        `<strong>WebGaze</strong> · best model <strong>${model}</strong> · FiWi CC ${cc}, AUC-Judd ${auc} (${n} images) · ${ck}`;
+        `<strong>WebGaze</strong> · reported best model <strong>${model}</strong> · FiWi CC ${cc}, AUC-Judd ${auc} (${n} images) · ${ck}`;
       if (!info.sample_ready) {
         els.sampleBtn.disabled = true;
         els.sampleBtn.title = "Sample image not found";
